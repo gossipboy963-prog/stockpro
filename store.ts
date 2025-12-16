@@ -89,6 +89,22 @@ export const useStore = () => {
     saveJournal(newJournal);
   };
 
+  // Import Data Function
+  const importData = (backupData: { state: AppState, journal: JournalEntry[] }) => {
+    try {
+      if (backupData.state) {
+        saveState(backupData.state);
+      }
+      if (backupData.journal) {
+        saveJournal(backupData.journal);
+      }
+      return true;
+    } catch (e) {
+      console.error("Failed to import data", e);
+      return false;
+    }
+  };
+
   return {
     state,
     journal,
@@ -99,6 +115,7 @@ export const useStore = () => {
     updateCash,
     updateEOD,
     markMonthlyAdjustment,
-    addJournalEntry
+    addJournalEntry,
+    importData
   };
 };

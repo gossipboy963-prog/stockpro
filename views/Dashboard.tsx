@@ -1,21 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import { AppState } from '../types';
+import React, { useState, useEffect, useRef } from 'react';
+import { AppState, JournalEntry } from '../types';
 import { Card, Button, Input } from '../components/ui';
-import { AlertCircle, CheckCircle, TrendingUp, Shield, Wallet, AlertTriangle, CalendarCheck } from 'lucide-react';
+import { AlertCircle, CheckCircle, TrendingUp, Shield, Wallet, AlertTriangle, CalendarCheck, Download, Upload } from 'lucide-react';
 
 const formatCurrency = (val: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(val);
 const formatPct = (val: number) => `${(val * 100).toFixed(1)}%`;
 
 interface DashboardProps {
   state: AppState;
+  journal: JournalEntry[];
   updateEOD: (prices: Record<string, number>) => void;
   markMonthlyAdjustment: () => void;
+  importData: (data: { state: AppState, journal: JournalEntry[] }) => boolean;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ state, updateEOD, markMonthlyAdjustment }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ state, journal, updateEOD, markMonthlyAdjustment, importData }) => {
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [tempPrices, setTempPrices] = useState<Record<string, string>>({});
   const [animateBar, setAnimateBar] = useState(false);
+  
+  // Hidden file input ref
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Trigger animation on mount
   useEffect(() => {
@@ -96,7 +101,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ state, updateEOD, markMont
     { 
       name: 'ETF Core', 
       value: buckets.ETF, 
-      pct: alloc.ETF,
+      pct: alloc.ETF, 
       color: 'bg-stone-400', 
       textColor: 'text-stone-600',
       bucketType: 'ETF',
@@ -139,6 +144,64 @@ export const Dashboard: React.FC<DashboardProps> = ({ state, updateEOD, markMont
     });
     updateEOD(prices);
     setShowUpdateModal(false);
+  };
+
+  // --- Export / Import Handlers ---
+  const handleExport = () => {
+    const backupData = {
+      state,
+      journal,
+      meta: {
+        version: '1.0',
+        exportedAt: new Date().toISOString()
+      }
+    };
+    
+    const jsonString = JSON.stringify(backupData, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `zentrade_backup_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const json = JSON.parse(event.target?.result as string);
+        if (json.state && json.journal) {
+           if (window.confirm("警告：還原資料將會覆蓋您目前手機上的所有紀錄。確定要繼續嗎？")) {
+             const success = importData(json);
+             if (success) {
+               alert("資料還原成功！");
+             } else {
+               alert("還原失敗，資料格式可能錯誤。");
+             }
+           }
+        } else {
+           alert("無效的備份檔案。");
+        }
+      } catch (err) {
+        console.error(err);
+        alert("讀取檔案失敗。");
+      }
+      // Reset input
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+    reader.readAsText(file);
   };
 
   return (
@@ -272,6 +335,32 @@ export const Dashboard: React.FC<DashboardProps> = ({ state, updateEOD, markMont
           </div>
         </div>
       </Card>
+      
+      {/* Data Management Section (Minimalist) */}
+      <div className="mt-8 mb-4 border-t border-dashed border-stone-200 pt-6">
+        <div className="flex justify-center gap-8">
+           <button onClick={handleExport} className="group flex flex-col items-center gap-2">
+              <div className="p-3 rounded-full bg-stone-50 text-stone-400 border border-stone-100 group-hover:bg-white group-hover:shadow-sm group-hover:text-stone-600 transition-all">
+                 <Download size={16} strokeWidth={1.5} />
+              </div>
+              <span className="text-[10px] font-medium text-stone-300 group-hover:text-stone-500 transition-colors">BACKUP</span>
+           </button>
+           
+           <button onClick={handleImportClick} className="group flex flex-col items-center gap-2">
+              <div className="p-3 rounded-full bg-stone-50 text-stone-400 border border-stone-100 group-hover:bg-white group-hover:shadow-sm group-hover:text-stone-600 transition-all">
+                 <Upload size={16} strokeWidth={1.5} />
+              </div>
+              <span className="text-[10px] font-medium text-stone-300 group-hover:text-stone-500 transition-colors">RESTORE</span>
+           </button>
+        </div>
+        <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleFileChange} 
+            accept=".json" 
+            className="hidden" 
+        />
+      </div>
 
       {/* Update Modal */}
       {showUpdateModal && (
