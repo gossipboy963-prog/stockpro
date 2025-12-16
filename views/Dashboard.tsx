@@ -269,27 +269,27 @@ export const Dashboard: React.FC<DashboardProps> = ({ state, journal, updateEOD,
           </span>
         </div>
         
-        {/* EOD Status */}
-        <div className="pt-2 pl-1">
-          {isUpdatedToday ? (
-            <div className="flex items-center gap-2 text-xs text-stone-400 animate-in fade-in duration-500">
-              <CheckCircle size={14} className="text-stone-300"/>
-              <span>Market data updated ({new Date(state.lastUpdate!).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})})</span>
-            </div>
-          ) : (
-            <button 
-              onClick={() => {
-                const p: Record<string, string> = {};
-                // Pre-fill prices. If multiple positions exist, just take the first one's price
-                state.holdings.forEach(h => p[h.symbol] = h.currentPrice.toString());
-                setTempPrices(p);
-                setShowUpdateModal(true);
-              }} 
-              className="flex items-center gap-2 text-xs text-stone-600 bg-stone-100 px-4 py-2 rounded-full border border-stone-200 hover:bg-stone-200 transition-colors"
-            >
-              <AlertCircle size={14} />
-              <span>Update Closing Prices</span>
-            </button>
+        {/* Action Button: Always Visible */}
+        <div className="pt-2 pl-1 flex items-center gap-3">
+          <button 
+            onClick={() => {
+              const p: Record<string, string> = {};
+              // Pre-fill prices. If multiple positions exist, just take the first one's price
+              state.holdings.forEach(h => p[h.symbol] = h.currentPrice.toString());
+              setTempPrices(p);
+              setShowUpdateModal(true);
+            }} 
+            className="flex items-center gap-2 text-xs text-stone-600 bg-stone-100 px-4 py-2 rounded-full border border-stone-200 hover:bg-stone-200 transition-colors active:scale-95"
+          >
+            <RefreshCw size={14} />
+            <span>Update Price</span>
+          </button>
+
+          {isUpdatedToday && state.lastUpdate && (
+             <span className="text-[10px] text-stone-400 flex items-center gap-1 animate-in fade-in">
+                <CheckCircle size={10} />
+                {new Date(state.lastUpdate).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+             </span>
           )}
         </div>
       </section>
