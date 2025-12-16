@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { AppState, JournalEntry } from '../types';
 import { Card, Button, Input } from '../components/ui';
-import { AlertCircle, CheckCircle, TrendingUp, Shield, Wallet, AlertTriangle, CalendarCheck, Download, Upload } from 'lucide-react';
+import { AlertCircle, CheckCircle, TrendingUp, Shield, Wallet, AlertTriangle, CalendarCheck, Download, Upload, RefreshCw, Loader2 } from 'lucide-react';
 
 const formatCurrency = (val: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(val);
 const formatPct = (val: number) => `${(val * 100).toFixed(1)}%`;
@@ -18,6 +18,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ state, journal, updateEOD,
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [tempPrices, setTempPrices] = useState<Record<string, string>>({});
   const [animateBar, setAnimateBar] = useState(false);
+  const [isFetching, setIsFetching] = useState(false);
   
   // Hidden file input ref
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -152,6 +153,47 @@ export const Dashboard: React.FC<DashboardProps> = ({ state, journal, updateEOD,
     });
     updateEOD(prices);
     setShowUpdateModal(false);
+  };
+
+  // --- Auto Fetch Logic ---
+  const handleAutoFetch = async () => {
+    setIsFetching(true);
+    const uniqueSymbols = Array.from(new Set(state.holdings.map(h => h.symbol)));
+    const newPrices = { ...tempPrices };
+    
+    // We use corsproxy.io to bypass CORS issues with Yahoo Finance
+    const fetchSymbolPrice = async (symbol: string) => {
+      try {
+        const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d`;
+        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(yahooUrl)}`;
+        
+        const response = await fetch(proxyUrl);
+        const data = await response.json();
+        const price = data?.chart?.result?.[0]?.meta?.regularMarketPrice;
+        
+        if (price) {
+          return { symbol, price };
+        }
+        return null;
+      } catch (error) {
+        console.error(`Error fetching ${symbol}:`, error);
+        return null;
+      }
+    };
+
+    try {
+      const results = await Promise.all(uniqueSymbols.map(sym => fetchSymbolPrice(sym)));
+      results.forEach(res => {
+        if (res) {
+          newPrices[res.symbol] = res.price.toString();
+        }
+      });
+      setTempPrices(newPrices);
+    } catch (e) {
+      alert("部分價格抓取失敗，請檢查網路連線。");
+    } finally {
+      setIsFetching(false);
+    }
   };
 
   // --- Export / Import Handlers ---
@@ -376,8 +418,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ state, journal, updateEOD,
       {/* Update Modal - Aggregated by Unique Symbol */}
       {showUpdateModal && (
         <div className="fixed inset-0 bg-stone-900/20 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-md rounded-2xl p-8 shadow-2xl max-h-[90vh] overflow-y-auto border border-stone-100">
+          <div className="bg-white w-full max-w-md rounded-2xl p-8 shadow-2xl max-h-[90vh] overflow-y-auto border border-stone-100 relative">
             <h3 className="text-xl font-light text-stone-800 mb-6 text-center">Update Closing Prices</h3>
+            
+            {/* Auto Fetch Button */}
+            <button 
+              onClick={handleAutoFetch} 
+              disabled={isFetching}
+              className="absolute top-8 right-8 text-stone-400 hover:text-stone-800 transition-colors disabled:opacity-50"
+              title="Auto Fetch Prices"
+            >
+              {isFetching ? <Loader2 size={20} className="animate-spin" /> : <RefreshCw size={20} />}
+            </button>
+
             <div className="space-y-5">
               {Array.from(new Set(state.holdings.map(h => h.symbol))).sort().map(sym => (
                 <div key={sym} className="flex items-center justify-between group">
