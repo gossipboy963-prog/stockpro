@@ -13,7 +13,7 @@ const App = () => {
 
   if (!isLoaded) {
     return (
-      <div className="h-screen w-full flex items-center justify-center bg-stone-50 text-stone-400">
+      <div className="h-[100dvh] w-full flex items-center justify-center bg-stone-50 text-stone-400">
         <Loader2 className="animate-spin" />
       </div>
     );
@@ -31,9 +31,9 @@ const App = () => {
   };
 
   return (
-    <div className="min-h-screen max-w-lg mx-auto bg-stone-50 relative flex flex-col">
+    <div className="h-[100dvh] w-full max-w-lg mx-auto bg-stone-50 relative flex flex-col overflow-hidden">
       {/* Main Content Area */}
-      <main className="flex-1 p-6 overflow-y-auto no-scrollbar">
+      <main className="flex-1 p-6 overflow-y-auto no-scrollbar scroll-smooth" style={{ WebkitOverflowScrolling: 'touch' }}>
         {renderView()}
       </main>
 

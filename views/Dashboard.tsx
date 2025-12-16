@@ -73,12 +73,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ state, journal, updateEOD,
 
   // Count & Concentration Alerts
   const tradingHoldings = state.holdings.filter(h => h.bucket === 'Trading');
-  if (tradingHoldings.length > 0 && tradingHoldings.length < 3) tradeWarnings.push("Count Low (<3)");
-  if (tradingHoldings.length > 5) tradeWarnings.push("Count High (>5)");
+  const uniqueTradingSymbols = new Set(tradingHoldings.map(h => h.symbol));
   
-  tradingHoldings.forEach(h => {
-    const posPct = (h.shares * h.currentPrice) / totalValue;
-    if (posPct > 0.15) tradeWarnings.push(`Concentrated: ${h.symbol} (${(posPct*100).toFixed(0)}%)`);
+  if (tradingHoldings.length > 0 && uniqueTradingSymbols.size < 3) tradeWarnings.push("Count Low (<3)");
+  if (uniqueTradingSymbols.size > 5) tradeWarnings.push("Count High (>5)");
+  
+  // Calculate concentration by unique symbol
+  uniqueTradingSymbols.forEach(sym => {
+    const symbolValue = tradingHoldings.filter(h => h.symbol === sym).reduce((sum, h) => sum + (h.shares * h.currentPrice), 0);
+    const posPct = symbolValue / totalValue;
+    if (posPct > 0.15) tradeWarnings.push(`Concentrated: ${sym} (${(posPct*100).toFixed(0)}%)`);
   });
 
   // 3. Hedge/Cash Checks (Target 20-35%, Alert range 15-35%)
@@ -90,9 +94,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ state, journal, updateEOD,
   // Specific Instrument Alerts
   if (alloc.HedgeOnly > 0.10) hedgeWarnings.push(`Hedge Assets High (${(alloc.HedgeOnly*100).toFixed(1)}%)`);
   
-  state.holdings.filter(h => h.bucket === 'Hedge').forEach(h => {
-     const posPct = (h.shares * h.currentPrice) / totalValue;
-     if (posPct > 0.08) hedgeWarnings.push(`Hedge Pos High: ${h.symbol}`);
+  const hedgeHoldings = state.holdings.filter(h => h.bucket === 'Hedge');
+  const uniqueHedgeSymbols = new Set(hedgeHoldings.map(h => h.symbol));
+  
+  uniqueHedgeSymbols.forEach(sym => {
+     const symbolValue = hedgeHoldings.filter(h => h.symbol === sym).reduce((sum, h) => sum + (h.shares * h.currentPrice), 0);
+     const posPct = symbolValue / totalValue;
+     if (posPct > 0.08) hedgeWarnings.push(`Hedge Pos High: ${sym}`);
   });
 
 
@@ -230,6 +238,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ state, journal, updateEOD,
             <button 
               onClick={() => {
                 const p: Record<string, string> = {};
+                // Pre-fill prices. If multiple positions exist, just take the first one's price
                 state.holdings.forEach(h => p[h.symbol] = h.currentPrice.toString());
                 setTempPrices(p);
                 setShowUpdateModal(true);
@@ -278,13 +287,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ state, journal, updateEOD,
                    </div>
                 </div>
                 
-                {/* List symbols in this bucket */}
+                {/* List symbols in this bucket (Unique Only) */}
                 <div className="flex flex-wrap gap-1.5 pl-9 mb-2">
-                  {state.holdings
+                  {Array.from(new Set(state.holdings
                     .filter(h => h.bucket === d.bucketType)
-                    .map(h => (
-                      <span key={h.id} className="text-[10px] font-medium text-stone-500 bg-stone-100/50 border border-stone-100 px-2 py-0.5 rounded-md">
-                        {h.symbol}
+                    .map(h => h.symbol)))
+                    .sort()
+                    .map(sym => (
+                      <span key={sym} className="text-[10px] font-medium text-stone-500 bg-stone-100/50 border border-stone-100 px-2 py-0.5 rounded-md">
+                        {sym}
                       </span>
                   ))}
                   {/* Show Cash label if hedge bucket */}
@@ -362,24 +373,27 @@ export const Dashboard: React.FC<DashboardProps> = ({ state, journal, updateEOD,
         />
       </div>
 
-      {/* Update Modal */}
+      {/* Update Modal - Aggregated by Unique Symbol */}
       {showUpdateModal && (
         <div className="fixed inset-0 bg-stone-900/20 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-md rounded-2xl p-8 shadow-2xl max-h-[90vh] overflow-y-auto border border-stone-100">
             <h3 className="text-xl font-light text-stone-800 mb-6 text-center">Update Closing Prices</h3>
             <div className="space-y-5">
-              {state.holdings.map(h => (
-                <div key={h.id} className="flex items-center justify-between group">
-                  <span className="font-bold text-stone-700 w-16 text-lg">{h.symbol}</span>
+              {Array.from(new Set(state.holdings.map(h => h.symbol))).sort().map(sym => (
+                <div key={sym} className="flex items-center justify-between group">
+                  <span className="font-bold text-stone-700 w-16 text-lg">{sym}</span>
                   <Input 
                     type="number" 
-                    value={tempPrices[h.symbol] || ''} 
-                    onChange={(e: any) => setTempPrices({...tempPrices, [h.symbol]: e.target.value})}
+                    value={tempPrices[sym] || ''} 
+                    onChange={(e: any) => setTempPrices({...tempPrices, [sym]: e.target.value})}
                     placeholder="Price"
                     className="flex-1 text-right font-mono"
                   />
                 </div>
               ))}
+              {state.holdings.length === 0 && (
+                <p className="text-center text-stone-400 text-sm">No positions found.</p>
+              )}
             </div>
             <div className="flex gap-4 mt-8">
               <Button variant="outline" className="flex-1" onClick={() => setShowUpdateModal(false)}>Cancel</Button>
