@@ -89,8 +89,9 @@ export const Holdings = ({ state, addPosition, removePosition, updatePosition, u
                            <span className="font-bold text-lg text-stone-800">{h.symbol}</span>
                            <Badge color={h.bucket === 'ETF' ? 'blue' : h.bucket === 'Hedge' ? 'yellow' : 'stone'}>{h.bucket}</Badge>
                         </div>
-                        <div className="text-xs text-stone-50 space-y-0.5">
-                           <div>{h.shares} shares</div>
+                        {/* Changed text color from stone-50 (invisible) to stone-500/600 (visible) */}
+                        <div className="text-xs text-stone-500 space-y-1 mt-1">
+                           <div className="font-medium text-stone-600">{h.shares} shares</div>
                            <div className="flex gap-2">
                               <span>Cost ${h.avgCost}</span>
                               <span className="text-stone-300">•</span>

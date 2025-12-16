@@ -37,6 +37,18 @@ self.addEventListener('fetch', (event) => {
   // Only handle http/https requests
   if (!event.request.url.startsWith('http')) return;
 
+  // 1. DYNAMIC DATA STRATEGY: Network Only (Do NOT cache)
+  // We explicitly exclude API calls (corsproxy, yahoo, or any cache-busting params)
+  // to prevent cache bloat and ensure fresh data.
+  if (
+    event.request.url.includes('corsproxy.io') || 
+    event.request.url.includes('yahoo.com') ||
+    event.request.url.includes('t=') // Timestamped requests
+  ) {
+    return; // Return nothing = let the browser perform a standard network fetch without SW interference
+  }
+
+  // 2. APP SHELL STRATEGY: Stale-While-Revalidate or Network First falling back to Cache
   event.respondWith(
     fetch(event.request)
       .then((response) => {
@@ -44,6 +56,7 @@ self.addEventListener('fetch', (event) => {
         if (!response || response.status !== 200 || response.type !== 'basic') {
           return response;
         }
+        
         const responseToCache = response.clone();
         caches.open(CACHE_NAME).then((cache) => {
           cache.put(event.request, responseToCache);
@@ -51,7 +64,7 @@ self.addEventListener('fetch', (event) => {
         return response;
       })
       .catch(() => {
-        // If network fails, try cache
+        // If network fails, try cache (Offline mode)
         return caches.match(event.request);
       })
   );
