@@ -164,7 +164,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ state, journal, updateEOD,
     // We use corsproxy.io to bypass CORS issues with Yahoo Finance
     const fetchSymbolPrice = async (symbol: string) => {
       try {
-        const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d`;
+        // Add cache buster timestamp to ensure fresh data on every request
+        const timestamp = Date.now();
+        const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&t=${timestamp}`;
         const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(yahooUrl)}`;
         
         const response = await fetch(proxyUrl);
@@ -190,7 +192,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ state, journal, updateEOD,
       });
       setTempPrices(newPrices);
     } catch (e) {
-      alert("部分價格抓取失敗，請檢查網路連線。");
+      console.error(e);
+      // Removed alert to avoid interrupting the flow if user spam clicks
     } finally {
       setIsFetching(false);
     }

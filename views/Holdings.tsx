@@ -75,7 +75,10 @@ export const Holdings = ({ state, addPosition, removePosition, updatePosition, u
       <div className="space-y-3">
          {state.holdings.map((h: Position) => {
             const mktValue = h.shares * h.currentPrice;
-            const dayChange = (h.currentPrice - h.prevClose) * h.shares;
+            // Calculate Total Return instead of Daily Change
+            const totalCost = h.shares * h.avgCost;
+            const totalReturn = mktValue - totalCost;
+            const returnPct = totalCost > 0 ? (totalReturn / totalCost) : 0;
             const regDate = new Date(parseInt(h.id)).toLocaleDateString();
             
             return (
@@ -86,7 +89,7 @@ export const Holdings = ({ state, addPosition, removePosition, updatePosition, u
                            <span className="font-bold text-lg text-stone-800">{h.symbol}</span>
                            <Badge color={h.bucket === 'ETF' ? 'blue' : h.bucket === 'Hedge' ? 'yellow' : 'stone'}>{h.bucket}</Badge>
                         </div>
-                        <div className="text-xs text-stone-500 space-y-0.5">
+                        <div className="text-xs text-stone-50 space-y-0.5">
                            <div>{h.shares} shares</div>
                            <div className="flex gap-2">
                               <span>Cost ${h.avgCost}</span>
@@ -97,8 +100,9 @@ export const Holdings = ({ state, addPosition, removePosition, updatePosition, u
                      </div>
                      <div className="text-right">
                         <div className="font-medium text-stone-800">${mktValue.toLocaleString()}</div>
-                        <div className={`text-xs font-medium ${dayChange >= 0 ? 'text-[#577c74]' : 'text-[#9f5f5f]'}`}>
-                           {dayChange >= 0 ? '+' : ''}{dayChange.toFixed(0)} ({((dayChange/mktValue)*100 || 0).toFixed(1)}%)
+                        {/* Display Total Return (Profit/Loss) and % */}
+                        <div className={`text-xs font-medium ${totalReturn >= 0 ? 'text-[#577c74]' : 'text-[#9f5f5f]'}`}>
+                           {totalReturn >= 0 ? '+' : ''}{totalReturn.toFixed(0)} ({(returnPct * 100).toFixed(1)}%)
                         </div>
                         <div className="text-[10px] text-stone-300 mt-2">{regDate}</div>
                      </div>
