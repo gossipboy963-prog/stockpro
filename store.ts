@@ -11,6 +11,31 @@ const INITIAL_STATE: AppState = {
   lastMonthlyAdjustment: null,
 };
 
+// Helper: Get a unique "Trading Day Code" based on Taipei Time (UTC+8)
+// A trading day is defined as starting at 7:00 AM Taipei Time.
+// If it's before 7:00 AM, it counts as the previous calendar day.
+const getTaipeiTradingDayCode = (timestamp: number | null): string => {
+  if (!timestamp) return "1970-01-01";
+  
+  // Get the date string in Taipei Time
+  // This converts the timestamp to a string like "2/24/2025, 8:30:00 AM" representing Taipei time
+  const dateInTaipeiStr = new Date(timestamp).toLocaleString('en-US', { timeZone: 'Asia/Taipei' });
+  
+  // Create a new Date object from this string. 
+  // NOTE: This creates a date object where the 'face value' matches Taipei time, 
+  // but mapped to the browser's local timezone context. 
+  // This allows us to use .getHours() to easily check the "Taipei Hour".
+  const dateObj = new Date(dateInTaipeiStr);
+
+  // If the hour is before 7:00 AM, belong to the previous trading day
+  if (dateObj.getHours() < 7) {
+    dateObj.setDate(dateObj.getDate() - 1);
+  }
+
+  // Return formatted string YYYY-MM-DD
+  return dateObj.toDateString();
+};
+
 export const useStore = () => {
   const [state, setState] = useState<AppState>(INITIAL_STATE);
   const [journal, setJournal] = useState<JournalEntry[]>([]);
@@ -67,16 +92,25 @@ export const useStore = () => {
 
   const updateEOD = (prices: Record<string, number>) => {
     const now = Date.now();
+    
+    // Determine if we entered a new trading day (After 7:00 AM Taipei)
+    const currentTradingDay = getTaipeiTradingDayCode(now);
+    const lastUpdateTradingDay = getTaipeiTradingDayCode(state.lastUpdate);
+    const isNewTradingDay = currentTradingDay !== lastUpdateTradingDay;
+
     const newHoldings = state.holdings.map(h => {
       if (prices[h.symbol] !== undefined) {
         return {
           ...h,
-          prevClose: h.currentPrice, // Move current to prev
-          currentPrice: prices[h.symbol] // Set new current
+          // If it's a new trading day, move currentPrice to prevClose.
+          // If it's the SAME trading day (multiple updates), keep the ORIGINAL prevClose for the day.
+          prevClose: isNewTradingDay ? h.currentPrice : h.prevClose, 
+          currentPrice: prices[h.symbol] // Always update current price
         };
       }
       return h;
     });
+    
     saveState({ ...state, holdings: newHoldings, lastUpdate: now });
   };
 

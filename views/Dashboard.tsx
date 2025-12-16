@@ -165,11 +165,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ state, journal, updateEOD,
     const fetchSymbolPrice = async (symbol: string) => {
       try {
         // Add cache buster timestamp to ensure fresh data on every request
+        // STRICT NO CACHE: Add both timestamp param and cache: 'no-store' option
         const timestamp = Date.now();
         const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&t=${timestamp}`;
         const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(yahooUrl)}`;
         
-        const response = await fetch(proxyUrl);
+        const response = await fetch(proxyUrl, {
+          cache: 'no-store', // Directly tell browser not to look at cache
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          }
+        });
+        
         const data = await response.json();
         const price = data?.chart?.result?.[0]?.meta?.regularMarketPrice;
         
@@ -237,8 +246,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ state, journal, updateEOD,
         const json = JSON.parse(event.target?.result as string);
         if (json.state && json.journal) {
            if (window.confirm("警告：還原資料將會覆蓋您目前手機上的所有紀錄。確定要繼續嗎？")) {
-             const success = importData(json);
-             if (success) {
+             const importSuccess = importData(json);
+             if (importSuccess) {
                alert("資料還原成功！");
              } else {
                alert("還原失敗，資料格式可能錯誤。");
@@ -332,21 +341,34 @@ export const Dashboard: React.FC<DashboardProps> = ({ state, journal, updateEOD,
                    </div>
                 </div>
                 
-                {/* List symbols in this bucket (Unique Only) */}
+                {/* List symbols in this bucket (Unique Only) with % */}
                 <div className="flex flex-wrap gap-1.5 pl-9 mb-2">
                   {Array.from(new Set(state.holdings
                     .filter(h => h.bucket === d.bucketType)
                     .map(h => h.symbol)))
                     .sort()
-                    .map(sym => (
-                      <span key={sym} className="text-[10px] font-medium text-stone-500 bg-stone-100/50 border border-stone-100 px-2 py-0.5 rounded-md">
-                        {sym}
-                      </span>
-                  ))}
-                  {/* Show Cash label if hedge bucket */}
+                    .map(sym => {
+                      // Calculate weight within the bucket
+                      const symValue = state.holdings
+                        .filter(h => h.symbol === sym && h.bucket === d.bucketType)
+                        .reduce((sum, h) => sum + (h.shares * h.currentPrice), 0);
+                      const pctInBucket = d.value > 0 ? (symValue / d.value) : 0;
+                      
+                      return (
+                        <span key={sym} className="text-[10px] font-medium text-stone-500 bg-stone-100/50 border border-stone-100 px-2 py-0.5 rounded-md flex items-center gap-1">
+                          {sym} 
+                          <span className="text-stone-300">|</span>
+                          <span className="text-stone-400">{(pctInBucket * 100).toFixed(0)}%</span>
+                        </span>
+                      );
+                  })}
+                  
+                  {/* Show Cash label if hedge bucket, with % */}
                   {d.name === 'Cash / Hedge' && state.cashUSD > 0 && (
-                     <span className="text-[10px] font-medium text-stone-400 border border-stone-100 bg-stone-50/50 px-2 py-0.5 rounded-md">
+                     <span className="text-[10px] font-medium text-stone-400 border border-stone-100 bg-stone-50/50 px-2 py-0.5 rounded-md flex items-center gap-1">
                         CASH
+                        <span className="text-stone-300">|</span>
+                        <span className="text-stone-400">{d.value > 0 ? ((state.cashUSD / d.value) * 100).toFixed(0) : 0}%</span>
                      </span>
                   )}
                   {state.holdings.filter(h => h.bucket === d.bucketType).length === 0 && d.name !== 'Cash / Hedge' && (
