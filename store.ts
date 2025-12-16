@@ -123,6 +123,15 @@ export const useStore = () => {
     saveJournal(newJournal);
   };
 
+  const deleteJournalEntry = (id: string) => {
+    const newJournal = journal.filter(entry => entry.id !== id);
+    saveJournal(newJournal);
+  };
+
+  const clearJournal = () => {
+    saveJournal([]);
+  };
+
   // Import Data Function
   const importData = (backupData: { state: AppState, journal: JournalEntry[] }) => {
     try {
@@ -150,6 +159,8 @@ export const useStore = () => {
     updateEOD,
     markMonthlyAdjustment,
     addJournalEntry,
+    deleteJournalEntry,
+    clearJournal,
     importData
   };
 };

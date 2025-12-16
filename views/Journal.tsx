@@ -1,7 +1,7 @@
 import React from 'react';
 import { JournalEntry, SOPStatus } from '../types';
 import { Card, Badge } from '../components/ui';
-import { ArrowUpCircle, ArrowDownCircle, BookOpen } from 'lucide-react';
+import { ArrowUpCircle, ArrowDownCircle, BookOpen, Trash2 } from 'lucide-react';
 
 const getSegmentColor = (status: SOPStatus) => {
    switch(status) {
@@ -12,19 +12,58 @@ const getSegmentColor = (status: SOPStatus) => {
    }
 };
 
-export const Journal = ({ entries }: { entries: JournalEntry[] }) => {
+interface JournalProps {
+   entries: JournalEntry[];
+   onDeleteEntry: (id: string) => void;
+   onClearJournal: () => void;
+}
+
+export const Journal = ({ entries, onDeleteEntry, onClearJournal }: JournalProps) => {
+
+  const handleDelete = (id: string, symbol: string) => {
+     if (window.confirm(`確定要刪除這筆 ${symbol} 的交易紀錄嗎？`)) {
+        onDeleteEntry(id);
+     }
+  };
+
+  const handleClearAll = () => {
+     if (entries.length === 0) return;
+     if (window.confirm("警告：確定要清空「所有」交易日誌嗎？此動作無法復原。")) {
+        onClearJournal();
+     }
+  };
+
   return (
     <div className="pb-32 space-y-6">
-      <div className="flex items-center gap-2 mb-2">
-        <BookOpen className="text-stone-400" size={24} />
-        <h1 className="text-2xl font-light text-stone-800">Journal</h1>
+      <div className="flex justify-between items-end mb-2">
+         <div className="flex items-center gap-2">
+            <BookOpen className="text-stone-400" size={24} />
+            <h1 className="text-2xl font-light text-stone-800">Journal</h1>
+         </div>
+         {entries.length > 0 && (
+            <button 
+               onClick={handleClearAll}
+               className="text-xs text-stone-400 hover:text-[#9f5f5f] transition-colors border border-stone-200 px-3 py-1.5 rounded-full hover:bg-stone-50"
+            >
+               Clear All
+            </button>
+         )}
       </div>
       
       <div className="space-y-4">
         {entries.map(entry => (
-          <Card key={entry.id}>
+          <Card key={entry.id} className="relative group">
+            {/* Delete Button - Visible on hover or simplified for mobile layout */}
+            <button 
+               onClick={() => handleDelete(entry.id, entry.symbol)}
+               className="absolute top-4 right-4 text-stone-300 hover:text-[#9f5f5f] p-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all z-10"
+               title="Delete Entry"
+            >
+               <Trash2 size={16} />
+            </button>
+
             {/* Header Area */}
-            <div className="flex justify-between items-start mb-4">
+            <div className="flex justify-between items-start mb-4 pr-6">
               <div>
                 <div className="flex items-center gap-2 mb-1">
                    <span className="font-bold text-xl text-stone-800 tracking-tight">{entry.symbol}</span>
@@ -67,7 +106,7 @@ export const Journal = ({ entries }: { entries: JournalEntry[] }) => {
 
               {/* Numeric Score */}
               {entry.score !== undefined && (
-                 <div className="flex flex-col items-end">
+                 <div className="flex flex-col items-end mr-4 sm:mr-0">
                     <span className="text-2xl font-light text-stone-300">
                        <span className="text-stone-700 font-medium">{entry.score}</span>
                        <span className="text-lg">/21</span>

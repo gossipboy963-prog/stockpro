@@ -8,7 +8,7 @@ import { RiskCalculator } from './views/RiskCalc';
 import { LayoutGrid, PieChart, CheckSquare, BookOpen, Loader2, Calculator } from 'lucide-react';
 
 const App = () => {
-  const { state, journal, isLoaded, addPosition, removePosition, updatePosition, updateCash, updateEOD, markMonthlyAdjustment, addJournalEntry, importData } = useStore();
+  const { state, journal, isLoaded, addPosition, removePosition, updatePosition, updateCash, updateEOD, markMonthlyAdjustment, addJournalEntry, deleteJournalEntry, clearJournal, importData } = useStore();
   const [activeTab, setActiveTab] = useState<'dash'|'holdings'|'check'|'risk'|'journal'>('dash');
 
   if (!isLoaded) {
@@ -25,7 +25,7 @@ const App = () => {
       case 'holdings': return <Holdings state={state} addPosition={addPosition} removePosition={removePosition} updatePosition={updatePosition} updateCash={updateCash} />;
       case 'check': return <Checklist onSave={addJournalEntry} />;
       case 'risk': return <RiskCalculator />;
-      case 'journal': return <Journal entries={journal} />;
+      case 'journal': return <Journal entries={journal} onDeleteEntry={deleteJournalEntry} onClearJournal={clearJournal} />;
       default: return null;
     }
   };
