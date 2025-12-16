@@ -53,18 +53,9 @@ export const Journal = ({ entries, onDeleteEntry, onClearJournal }: JournalProps
       <div className="space-y-4">
         {entries.map(entry => (
           <Card key={entry.id} className="relative group">
-            {/* Delete Button - Visible on hover or simplified for mobile layout */}
-            <button 
-               onClick={() => handleDelete(entry.id, entry.symbol)}
-               className="absolute top-4 right-4 text-stone-300 hover:text-[#9f5f5f] p-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all z-10"
-               title="Delete Entry"
-            >
-               <Trash2 size={16} />
-            </button>
-
-            {/* Header Area */}
-            <div className="flex justify-between items-start mb-4 pr-6">
-              <div>
+            {/* Header Area containing Layout for Left Info and Right Action/Score */}
+            <div className="flex justify-between items-start mb-4">
+              <div className="pr-2">
                 <div className="flex items-center gap-2 mb-1">
                    <span className="font-bold text-xl text-stone-800 tracking-tight">{entry.symbol}</span>
                    {/* Score Label Badge */}
@@ -85,7 +76,7 @@ export const Journal = ({ entries, onDeleteEntry, onClearJournal }: JournalProps
                 </div>
                 
                 {/* Meta Row: Direction + Price + Date */}
-                <div className="flex items-center gap-2 text-sm mt-1">
+                <div className="flex items-center gap-2 text-sm mt-1 flex-wrap">
                    {entry.direction && (
                      <span className={`font-bold flex items-center gap-1 ${entry.direction === 'Long' ? 'text-[#577c74]' : 'text-[#9f5f5f]'}`}>
                         {entry.direction === 'Long' ? <ArrowUpCircle size={14}/> : <ArrowDownCircle size={14}/>}
@@ -97,22 +88,35 @@ export const Journal = ({ entries, onDeleteEntry, onClearJournal }: JournalProps
                          ${entry.price.toLocaleString()}
                       </span>
                    )}
-                   <span className="text-stone-300 text-xs">•</span>
-                   <span className="text-stone-400 text-xs">{new Date(entry.date).toLocaleDateString()}</span>
-                   <span className="text-stone-300 text-xs">•</span>
-                   <span className="text-stone-400 text-xs">{entry.bucket}</span>
+                   <span className="text-stone-300 text-xs hidden sm:inline">•</span>
+                   <span className="text-stone-400 text-xs whitespace-nowrap">{new Date(entry.date).toLocaleDateString()}</span>
+                   <span className="text-stone-300 text-xs hidden sm:inline">•</span>
+                   <span className="text-stone-400 text-xs hidden sm:inline">{entry.bucket}</span>
                 </div>
               </div>
 
-              {/* Numeric Score */}
-              {entry.score !== undefined && (
-                 <div className="flex flex-col items-end mr-4 sm:mr-0">
-                    <span className="text-2xl font-light text-stone-300">
+              {/* Right Side: Delete Button Stacked with Score */}
+              <div className="flex flex-col items-end gap-1">
+                 {/* Delete Button - Stacked on top */}
+                 <button 
+                    onClick={(e) => {
+                       e.stopPropagation();
+                       handleDelete(entry.id, entry.symbol);
+                    }}
+                    className="p-1.5 -mr-1.5 text-stone-300 hover:text-[#9f5f5f] opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all"
+                    title="Delete Entry"
+                 >
+                    <Trash2 size={18} />
+                 </button>
+
+                 {/* Numeric Score - Stacked below */}
+                 {entry.score !== undefined && (
+                    <span className="text-2xl font-light text-stone-300 leading-none mt-1">
                        <span className="text-stone-700 font-medium">{entry.score}</span>
                        <span className="text-lg">/21</span>
                     </span>
-                 </div>
-              )}
+                 )}
+              </div>
             </div>
 
             {/* SOP Visualization: 7-segment line */}
