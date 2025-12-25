@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { AppState, JournalEntry } from '../types';
 import { Card, Button, Input } from '../components/ui';
@@ -83,7 +84,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ state, journal, updateEOD,
   uniqueTradingSymbols.forEach(sym => {
     const symbolValue = tradingHoldings.filter(h => h.symbol === sym).reduce((sum, h) => sum + (h.shares * h.currentPrice), 0);
     const posPct = symbolValue / totalValue;
-    if (posPct > 0.15) tradeWarnings.push(`Concentrated: ${sym} (${(posPct*100).toFixed(0)}%)`);
+    if (posPct > 0.15) tradeWarnings.push(`Concentrated: ${sym} ${(posPct*100).toFixed(0)}%`);
   });
 
   // 3. Hedge/Cash Checks (Target 20-35%, Alert range 15-35%)
@@ -113,7 +114,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ state, journal, updateEOD,
       pct: alloc.ETF, 
       color: 'bg-stone-400', 
       textColor: 'text-stone-600',
-      bucketType: 'ETF',
+      bucketType: 'ETF' as const,
       icon: <Shield size={16} />,
       warnings: etfWarnings,
       needsReview: needsAdjustment
@@ -124,7 +125,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ state, journal, updateEOD,
       pct: alloc.Trading,
       color: 'bg-stone-600', 
       textColor: 'text-stone-800',
-      bucketType: 'Trading',
+      bucketType: 'Trading' as const,
       icon: <TrendingUp size={16} />,
       warnings: tradeWarnings
     },
@@ -134,7 +135,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ state, journal, updateEOD,
       pct: alloc.Hedge,
       color: 'bg-stone-200', 
       textColor: 'text-stone-500',
-      bucketType: 'Hedge',
+      bucketType: 'Hedge' as const,
       icon: <Wallet size={16} />,
       warnings: hedgeWarnings
     },
@@ -167,8 +168,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ state, journal, updateEOD,
         // Add cache buster timestamp to ensure fresh data on every request
         // STRICT NO CACHE: Add both timestamp param and cache: 'no-store' option
         const timestamp = Date.now();
-        const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&t=${timestamp}`;
-        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(yahooUrl)}`;
+        const yahooUrl: string = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&t=${timestamp}`;
+        
+        // FIX: Ensure proxyUrl is treated as a string and handled correctly in fetch
+        const proxyUrl: string = `https://corsproxy.io/?${encodeURIComponent(yahooUrl)}`;
         
         const response = await fetch(proxyUrl, {
           cache: 'no-store', // Directly tell browser not to look at cache
@@ -196,13 +199,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ state, journal, updateEOD,
       const results = await Promise.all(uniqueSymbols.map(sym => fetchSymbolPrice(sym)));
       results.forEach(res => {
         if (res) {
-          newPrices[res.symbol] = res.price.toString();
+          newPrices[res.symbol] = String(res.price);
         }
       });
       setTempPrices(newPrices);
     } catch (e) {
       console.error(e);
-      // Removed alert to avoid interrupting the flow if user spam clicks
     } finally {
       setIsFetching(false);
     }
@@ -446,7 +448,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ state, journal, updateEOD,
           <div className="bg-white w-full max-w-md rounded-2xl p-8 shadow-2xl max-h-[90vh] overflow-y-auto border border-stone-100 relative">
             <h3 className="text-xl font-light text-stone-800 mb-6 text-center">Update Closing Prices</h3>
             
-            {/* Auto Fetch Button */}
+            {/* FIX: Corrected comment syntax error for JSX */}
             <button 
               onClick={handleAutoFetch} 
               disabled={isFetching}
@@ -457,13 +459,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ state, journal, updateEOD,
             </button>
 
             <div className="space-y-5">
-              {Array.from(new Set(state.holdings.map(h => h.symbol))).sort().map(sym => (
-                <div key={sym} className="flex items-center justify-between group">
-                  <span className="font-bold text-stone-700 w-16 text-lg">{sym}</span>
+              {/* FIX: Simplified mapping and ensured sym is treated as a string */}
+              {Array.from(new Set(state.holdings.map(h => h.symbol))).sort().map((sym) => (
+                <div key={sym as string} className="flex items-center justify-between group">
+                  <span className="font-bold text-stone-700 w-16 text-lg">{sym as string}</span>
                   <Input 
                     type="number" 
-                    value={tempPrices[sym] || ''} 
-                    onChange={(e: any) => setTempPrices({...tempPrices, [sym]: e.target.value})}
+                    value={tempPrices[sym as string] || ''} 
+                    onChange={(e: any) => setTempPrices({...tempPrices, [sym as string]: e.target.value})}
                     placeholder="Price"
                     className="flex-1 text-right font-mono"
                   />

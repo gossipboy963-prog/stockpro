@@ -1,7 +1,7 @@
 import React from 'react';
 import { JournalEntry, SOPStatus } from '../types';
 import { Card, Badge } from '../components/ui';
-import { ArrowUpCircle, ArrowDownCircle, BookOpen, Trash2 } from 'lucide-react';
+import { ArrowUpCircle, ArrowDownCircle, BookOpen, Trash2, ShoppingCart } from 'lucide-react';
 
 const getSegmentColor = (status: SOPStatus) => {
    switch(status) {
@@ -53,12 +53,10 @@ export const Journal = ({ entries, onDeleteEntry, onClearJournal }: JournalProps
       <div className="space-y-4">
         {entries.map(entry => (
           <Card key={entry.id} className="relative group">
-            {/* Header Area containing Layout for Left Info and Right Action/Score */}
             <div className="flex justify-between items-start mb-4">
               <div className="pr-2">
                 <div className="flex items-center gap-2 mb-1">
                    <span className="font-bold text-xl text-stone-800 tracking-tight">{entry.symbol}</span>
-                   {/* Score Label Badge */}
                    {entry.scoreLabel ? (
                       <span className={`text-xs px-2 py-1 rounded-md font-bold border ${
                          entry.scoreLabel === 'Go' ? 'bg-[#577c74]/10 text-[#577c74] border-[#577c74]/20' :
@@ -75,8 +73,13 @@ export const Journal = ({ entries, onDeleteEntry, onClearJournal }: JournalProps
                    )}
                 </div>
                 
-                {/* Meta Row: Direction + Price + Date */}
                 <div className="flex items-center gap-2 text-sm mt-1 flex-wrap">
+                   {/* Action (BUY/SELL) Badge in English */}
+                   {entry.action && (
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${entry.action === 'Buy' ? 'bg-stone-800 text-white' : 'bg-white text-stone-800 border-stone-800'}`}>
+                         {entry.action.toUpperCase()}
+                      </span>
+                   )}
                    {entry.direction && (
                      <span className={`font-bold flex items-center gap-1 ${entry.direction === 'Long' ? 'text-[#577c74]' : 'text-[#9f5f5f]'}`}>
                         {entry.direction === 'Long' ? <ArrowUpCircle size={14}/> : <ArrowDownCircle size={14}/>}
@@ -85,31 +88,26 @@ export const Journal = ({ entries, onDeleteEntry, onClearJournal }: JournalProps
                    )}
                    {entry.price && (
                       <span className="font-mono text-stone-600 bg-stone-100 px-1.5 py-0.5 rounded text-xs">
-                         ${entry.price.toLocaleString()}
+                         {entry.price.toLocaleString()}
                       </span>
                    )}
                    <span className="text-stone-300 text-xs hidden sm:inline">•</span>
                    <span className="text-stone-400 text-xs whitespace-nowrap">{new Date(entry.date).toLocaleDateString()}</span>
-                   <span className="text-stone-300 text-xs hidden sm:inline">•</span>
-                   <span className="text-stone-400 text-xs hidden sm:inline">{entry.bucket}</span>
                 </div>
               </div>
 
-              {/* Right Side: Delete Button Stacked with Score */}
               <div className="flex flex-col items-end gap-1">
-                 {/* Delete Button - Stacked on top */}
                  <button 
                     onClick={(e) => {
                        e.stopPropagation();
                        handleDelete(entry.id, entry.symbol);
                     }}
-                    className="p-1.5 -mr-1.5 text-stone-300 hover:text-[#9f5f5f] opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all"
+                    className="p-1.5 -mr-1.5 text-stone-300 hover:text-[#9f5f5f] transition-all"
                     title="Delete Entry"
                  >
                     <Trash2 size={18} />
                  </button>
 
-                 {/* Numeric Score - Stacked below */}
                  {entry.score !== undefined && (
                     <span className="text-2xl font-light text-stone-300 leading-none mt-1">
                        <span className="text-stone-700 font-medium">{entry.score}</span>
@@ -119,7 +117,6 @@ export const Journal = ({ entries, onDeleteEntry, onClearJournal }: JournalProps
               </div>
             </div>
 
-            {/* SOP Visualization: 7-segment line */}
             <div className="mb-5">
                <div className="flex items-center justify-between mb-1.5">
                   <span className="text-[10px] font-bold text-stone-300 uppercase tracking-widest">SOP Analysis</span>
@@ -135,7 +132,6 @@ export const Journal = ({ entries, onDeleteEntry, onClearJournal }: JournalProps
                </div>
             </div>
             
-            {/* No Trade Reasons */}
             {entry.noTradeTriggered.length > 0 && (
                <div className="bg-[#9f5f5f]/5 p-3 rounded-xl mb-3 border border-[#9f5f5f]/10">
                   <p className="text-xs font-bold text-[#9f5f5f] mb-1">Triggered Rules:</p>
@@ -150,26 +146,9 @@ export const Journal = ({ entries, onDeleteEntry, onClearJournal }: JournalProps
                </div>
             )}
 
-            {/* User Notes */}
             {entry.userNotes && (
                <div className="text-sm text-stone-600 bg-stone-50 rounded-xl p-3 border border-stone-100 whitespace-pre-wrap leading-relaxed">
                   {entry.userNotes}
-               </div>
-            )}
-            
-            {/* Backward compatibility */}
-            {!entry.userNotes && (entry as any).coachComment && (
-               <div className="text-sm text-stone-400 italic border-l-2 border-stone-200 pl-3 py-1">
-                  "{(entry as any).coachComment}"
-               </div>
-            )}
-            
-            {/* Risk Data (if present) */}
-            {entry.riskCalc && (
-               <div className="mt-4 pt-3 border-t border-stone-100 flex gap-4 text-xs text-stone-400 font-mono">
-                  <span>Entry: {entry.riskCalc.entry}</span>
-                  <span>Stop: {entry.riskCalc.stop}</span>
-                  <span>Shares: {entry.riskCalc.shares}</span>
                </div>
             )}
           </Card>

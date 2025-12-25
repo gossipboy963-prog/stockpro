@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { INITIAL_SOP_STEPS } from '../constants';
 import { NO_TRADE_REASONS, SOPStep, JournalEntry, SOPStatus, ScoreLabel } from '../types';
 import { Card, Button, Input } from '../components/ui';
-import { AlertTriangle, Check, X, ClipboardList, ArrowUpCircle, ArrowDownCircle, AlertCircle } from 'lucide-react';
+import { AlertTriangle, Check, X, ClipboardList, ArrowUpCircle, ArrowDownCircle, ShoppingCart, Tag } from 'lucide-react';
 
 export const Checklist = ({ onSave }: { onSave: (entry: JournalEntry) => void }) => {
   const [symbol, setSymbol] = useState('');
   const [price, setPrice] = useState('');
   const [direction, setDirection] = useState<'Long'|'Short'>('Long');
+  const [action, setAction] = useState<'Buy'|'Sell'>('Buy');
   const [bucket, setBucket] = useState<'Trading'|'ETF'>('Trading');
   const [steps, setSteps] = useState(INITIAL_SOP_STEPS.map(s => ({ ...s, status: 'pending', note: '' } as SOPStep)));
   const [noTradeTriggered, setNoTradeTriggered] = useState<string[]>([]);
@@ -32,11 +33,8 @@ export const Checklist = ({ onSave }: { onSave: (entry: JournalEntry) => void })
 
     setCurrentScore(score);
 
-    // Hard Rule: Step 1 Fail = Avoid
     const step1 = steps.find(s => s.id === 1);
     const isStep1Fail = step1?.status === 'fail';
-
-    // No Trade List Triggered = Avoid
     const isNoTrade = noTradeTriggered.length > 0;
 
     if (isNoTrade || isStep1Fail) {
@@ -75,7 +73,6 @@ export const Checklist = ({ onSave }: { onSave: (entry: JournalEntry) => void })
   const handleSave = () => {
     if (!symbol) return alert('請輸入代號');
     if (!price) return alert('請輸入現價');
-    // Ensure all steps are filled
     if (steps.some(s => s.status === 'pending')) return alert('請完成所有 7 個步驟的評估。');
     if (finalResult === 'banned' && noTradeTriggered.length > 0 && !noTradeReasonNote) return alert('觸發不交易清單時，必須填寫理由。');
 
@@ -85,6 +82,7 @@ export const Checklist = ({ onSave }: { onSave: (entry: JournalEntry) => void })
       symbol: symbol.toUpperCase(),
       price: parseFloat(price),
       direction,
+      action,
       bucket,
       sopSteps: steps,
       noTradeTriggered,
@@ -92,12 +90,11 @@ export const Checklist = ({ onSave }: { onSave: (entry: JournalEntry) => void })
       result: finalResult,
       score: currentScore,
       scoreLabel: scoreLabel,
-      userNotes: userNotes // Save user notes
+      userNotes: userNotes 
     };
     onSave(entry);
     alert('已存入交易日誌');
     
-    // Reset form
     setSymbol('');
     setPrice('');
     setNoTradeTriggered([]);
@@ -121,43 +118,63 @@ export const Checklist = ({ onSave }: { onSave: (entry: JournalEntry) => void })
           <Input label="Price" type="number" value={price} onChange={(e: any) => setPrice(e.target.value)} placeholder="0.00" />
         </div>
         
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-             <label className="text-xs font-bold text-stone-400 uppercase tracking-wider">Direction</label>
-             <div className="flex gap-2 mt-1">
-                <button 
-                  onClick={() => setDirection('Long')}
-                  className={`flex-1 py-3 rounded-xl border text-sm font-medium flex items-center justify-center gap-1 transition-colors ${direction === 'Long' ? 'bg-[#577c74]/10 text-[#577c74] border-[#577c74]/20' : 'bg-white text-stone-400 border-stone-200 hover:bg-stone-50'}`}
-                >
-                   <ArrowUpCircle size={16}/> Long
-                </button>
-                <button 
-                  onClick={() => setDirection('Short')}
-                  className={`flex-1 py-3 rounded-xl border text-sm font-medium flex items-center justify-center gap-1 transition-colors ${direction === 'Short' ? 'bg-[#9f5f5f]/10 text-[#9f5f5f] border-[#9f5f5f]/20' : 'bg-white text-stone-400 border-stone-200 hover:bg-stone-50'}`}
-                >
-                   <ArrowDownCircle size={16}/> Short
-                </button>
-             </div>
+        {/* Action & Direction Selection in English */}
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+               <label className="text-xs font-bold text-stone-400 uppercase tracking-wider">Action</label>
+               <div className="flex gap-2 mt-1">
+                  <button 
+                    onClick={() => setAction('Buy')}
+                    className={`flex-1 py-3 rounded-xl border text-sm font-medium transition-colors ${action === 'Buy' ? 'bg-stone-800 text-white border-stone-800' : 'bg-white text-stone-400 border-stone-200 hover:bg-stone-50'}`}
+                  >
+                     Buy
+                  </button>
+                  <button 
+                    onClick={() => setAction('Sell')}
+                    className={`flex-1 py-3 rounded-xl border text-sm font-medium transition-colors ${action === 'Sell' ? 'bg-stone-800 text-white border-stone-800' : 'bg-white text-stone-400 border-stone-200 hover:bg-stone-50'}`}
+                  >
+                     Sell
+                  </button>
+               </div>
+            </div>
+            <div>
+               <label className="text-xs font-bold text-stone-400 uppercase tracking-wider">Direction</label>
+               <div className="flex gap-2 mt-1">
+                  <button 
+                    onClick={() => setDirection('Long')}
+                    className={`flex-1 py-3 rounded-xl border text-sm font-medium flex items-center justify-center gap-1 transition-colors ${direction === 'Long' ? 'bg-[#577c74]/10 text-[#577c74] border-[#577c74]/20' : 'bg-white text-stone-400 border-stone-200 hover:bg-stone-50'}`}
+                  >
+                     Long
+                  </button>
+                  <button 
+                    onClick={() => setDirection('Short')}
+                    className={`flex-1 py-3 rounded-xl border text-sm font-medium flex items-center justify-center gap-1 transition-colors ${direction === 'Short' ? 'bg-[#9f5f5f]/10 text-[#9f5f5f] border-[#9f5f5f]/20' : 'bg-white text-stone-400 border-stone-200 hover:bg-stone-50'}`}
+                  >
+                     Short
+                  </button>
+               </div>
+            </div>
           </div>
           <div>
             <label className="text-xs font-bold text-stone-400 uppercase tracking-wider">Bucket</label>
             <div className="flex gap-2 mt-1">
               <button 
                 onClick={() => setBucket('Trading')}
-                className={`flex-1 py-3 rounded-xl border text-sm font-medium transition-colors ${bucket === 'Trading' ? 'bg-stone-800 text-white border-stone-800' : 'bg-white text-stone-400 border-stone-200 hover:bg-stone-50'}`}
+                className={`flex-1 py-3 rounded-xl border text-sm font-medium transition-colors ${bucket === 'Trading' ? 'bg-stone-100 text-stone-800 border-stone-200' : 'bg-white text-stone-300 border-stone-100'}`}
               >Trade</button>
               <button 
                  onClick={() => setBucket('ETF')}
-                 className={`flex-1 py-3 rounded-xl border text-sm font-medium transition-colors ${bucket === 'ETF' ? 'bg-stone-800 text-white border-stone-800' : 'bg-white text-stone-400 border-stone-200 hover:bg-stone-50'}`}
+                 className={`flex-1 py-3 rounded-xl border text-sm font-medium transition-colors ${bucket === 'ETF' ? 'bg-stone-100 text-stone-800 border-stone-200' : 'bg-white text-stone-300 border-stone-100'}`}
               >ETF</button>
             </div>
           </div>
         </div>
       </Card>
 
-      {/* No Trade List */}
+      {/* Other sections remain unchanged */}
       <Card className={`transition-all duration-300 ${noTradeTriggered.length > 0 ? 'border-l-4 border-l-[#9f5f5f]/50 bg-[#9f5f5f]/5' : 'border border-stone-100'}`}>
-        <h3 className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+        <h3 className="text-xs font-bold text-stone-400 uppercase tracking-widest mb-3 flex items-center gap-2">
           <AlertTriangle size={14} /> Stop Trading If...
         </h3>
         <div className="space-y-1">
@@ -178,7 +195,6 @@ export const Checklist = ({ onSave }: { onSave: (entry: JournalEntry) => void })
         )}
       </Card>
 
-      {/* SOP */}
       <div className="space-y-4">
         {steps.map(step => (
           <div key={step.id} className={`bg-white rounded-2xl p-4 border shadow-sm transition-all duration-300 ${step.id === 1 && step.status === 'fail' ? 'border-[#9f5f5f]/30 bg-[#9f5f5f]/5' : 'border-stone-100'}`}>
@@ -193,7 +209,6 @@ export const Checklist = ({ onSave }: { onSave: (entry: JournalEntry) => void })
               </div>
             </div>
             
-            {/* Status Selection Buttons - Icons Only */}
             <div className="flex gap-2">
                <button 
                   onClick={() => setStepStatus(step.id, 'pass')}
@@ -207,7 +222,7 @@ export const Checklist = ({ onSave }: { onSave: (entry: JournalEntry) => void })
                   className={`flex-1 py-4 rounded-xl flex items-center justify-center transition-all ${step.status === 'warn' ? 'bg-stone-200 text-stone-600 ring-1 ring-stone-300' : 'bg-stone-50 text-stone-300 hover:bg-stone-100'}`}
                   aria-label="Warning"
                >
-                  <AlertCircle size={24} strokeWidth={2.5} />
+                  <AlertTriangle size={24} strokeWidth={2.5} />
                </button>
                <button 
                   onClick={() => setStepStatus(step.id, 'fail')}
@@ -221,7 +236,6 @@ export const Checklist = ({ onSave }: { onSave: (entry: JournalEntry) => void })
         ))}
       </div>
 
-      {/* User Notes */}
       <Card>
          <h3 className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-2">Notes / Strategy</h3>
          <textarea 
@@ -232,7 +246,6 @@ export const Checklist = ({ onSave }: { onSave: (entry: JournalEntry) => void })
          />
       </Card>
 
-      {/* Footer Action */}
       <div className="sticky bottom-20 z-10 pt-4 bg-gradient-to-t from-stone-50 via-stone-50 to-transparent pb-4">
          <Button 
             onClick={handleSave}

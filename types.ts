@@ -35,6 +35,7 @@ export interface JournalEntry {
   date: number;
   symbol: string;
   direction: 'Long' | 'Short';
+  action?: 'Buy' | 'Sell'; // Added Buy/Sell action
   price: number;
   bucket: BucketType;
   sopSteps: SOPStep[];

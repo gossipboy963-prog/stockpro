@@ -68,7 +68,7 @@ export const Holdings = ({ state, addPosition, removePosition, updatePosition, u
          <button onClick={handleOpenAdd} className="bg-stone-800 text-white rounded-full p-3 shadow-xl hover:scale-105 transition-transform"><Plus size={20}/></button>
       </div>
 
-      {/* Prominent Cash Card - Unified Style (White) */}
+      {/* Prominent Cash Card - Scaled for importance but color-unified */}
       <Card className="!p-6 flex items-center justify-between shadow-sm border border-stone-100">
          <label className="text-sm font-bold text-stone-400 uppercase tracking-widest shrink-0">CASH</label>
          <input 
@@ -95,17 +95,13 @@ export const Holdings = ({ state, addPosition, removePosition, updatePosition, u
             const dateString = `${year}.${month}.${day}`;
             
             return (
-               // Card: Reduced padding (p-5), reduced gap (gap-5) for compact look
                <Card key={h.id} className="!p-5 flex flex-col gap-5 relative group border-none shadow-[0_4px_20px_rgb(0,0,0,0.03)]">
                   
                   {/* Top Section: Identity & Performance */}
                   <div className="flex justify-between items-start">
                      <div>
                         <div className="flex items-center gap-2 mb-1">
-                           {/* BOLD Symbol */}
                            <span className="text-2xl font-bold text-stone-800 tracking-tight leading-none">{h.symbol}</span>
-                           
-                           {/* Tag next to Symbol */}
                            <span className={`text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded ${
                                  h.bucket === 'ETF' ? 'text-blue-600 bg-blue-50' : 
                                  h.bucket === 'Hedge' ? 'text-amber-600 bg-amber-50' : 
@@ -114,43 +110,39 @@ export const Holdings = ({ state, addPosition, removePosition, updatePosition, u
                                  {h.bucket.toUpperCase()}
                            </span>
                         </div>
-                        {/* Registration Date (YYYY.MM.DD) */}
                         <span className="text-[10px] text-stone-300 font-medium ml-0.5 tracking-wide">
                            {dateString}
                         </span>
                      </div>
 
-                     {/* Right Side: Market Value & P/L - Right Aligned */}
-                     <div className="text-right">
+                     {/* Fully right-aligned block for data precision */}
+                     <div className="flex flex-col items-end text-right">
                         <div className="text-xl font-medium text-stone-800 tracking-tight leading-none">
-                           ${mktValue.toLocaleString()}
+                           {mktValue.toLocaleString()}
                         </div>
-                        <div className={`text-sm font-medium mt-1 ${totalReturn >= 0 ? 'text-[#577c74]' : 'text-[#9f5f5f]'}`}>
-                           {totalReturn >= 0 ? '+' : ''}{totalReturn.toFixed(0)} ({ (returnPct * 100).toFixed(1) }%)
+                        <div className={`text-sm font-medium mt-1.5 ${totalReturn >= 0 ? 'text-[#577c74]' : 'text-[#9f5f5f]'}`}>
+                           {totalReturn >= 0 ? '+' : ''}{totalReturn.toFixed(0)} ({(returnPct * 100).toFixed(1)}%)
                         </div>
                      </div>
                   </div>
                   
                   {/* Bottom Section: Compact Hierarchy */}
                   <div className="flex items-end justify-between pt-1 border-t border-stone-50">
-                      {/* Left: Shares (Quantity Focus) */}
                       <div className="flex flex-col gap-0.5">
                           <span className="text-[9px] font-bold text-stone-300 uppercase tracking-widest">Shares</span>
                           <span className="text-lg font-light text-stone-700">{h.shares}</span>
                       </div>
 
-                      {/* Right: Prices Group & Actions */}
                       <div className="flex items-end gap-5">
                           <div className="flex flex-col gap-0.5 items-end">
                               <span className="text-[9px] font-bold text-stone-300 uppercase tracking-widest">Cost</span>
-                              <span className="text-sm font-mono text-stone-500">${h.avgCost}</span>
+                              <span className="text-sm font-mono text-stone-500">{h.avgCost}</span>
                           </div>
                           <div className="flex flex-col gap-0.5 items-end">
                               <span className="text-[9px] font-bold text-stone-300 uppercase tracking-widest">Curr</span>
-                              <span className="text-sm font-mono text-stone-800 font-medium">${h.currentPrice}</span>
+                              <span className="text-sm font-mono text-stone-800 font-medium">{h.currentPrice}</span>
                           </div>
                           
-                          {/* Actions - visible on mobile usually, hover on desktop */}
                           <div className="flex items-center gap-2 pl-2 border-l border-stone-100 ml-1">
                               <button 
                                   onClick={() => handleOpenEdit(h)} 
@@ -180,7 +172,7 @@ export const Holdings = ({ state, addPosition, removePosition, updatePosition, u
          )}
       </div>
 
-      {/* Modal */}
+      {/* Modal remains unchanged */}
       {isModalOpen && (
          <div className="fixed inset-0 bg-stone-900/10 backdrop-blur-sm z-50 flex items-center justify-center p-6">
             <div className="bg-white w-full max-w-sm rounded-3xl p-8 shadow-2xl space-y-6">
